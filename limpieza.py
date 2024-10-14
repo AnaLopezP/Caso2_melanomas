@@ -15,6 +15,7 @@ if not os.path.exists(output_dir):
 # Procesar todas las imágenes en el directorio
 def procesar_img(ruta, carpeta_destino):
     for filename in os.listdir(ruta):
+        
         if filename.endswith('.jpg') or filename.endswith('.png'):  # Extensiones comunes de imágenes
             # Cargar imagen
             img_path = os.path.join(ruta, filename)
@@ -38,7 +39,7 @@ def procesar_img(ruta, carpeta_destino):
             #img_gris = cv2.cvtColor(img_normalizada, cv2.COLOR_BGR2GRAY)
 
             # Paso 5: Guardar imagen preprocesada
-            carpeta_destino = os.path.join(output_dir, filename)
+            carpeta_destino = os.path.join(carpeta_destino, filename)
             cv2.imwrite(carpeta_destino, img_normalizada)
 
             print(f"Imagen preprocesada guardada: {carpeta_destino}")
