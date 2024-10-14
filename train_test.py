@@ -98,6 +98,6 @@ with torch.no_grad():  # No necesitamos calcular gradientes para la evaluación
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)  # Obtener la clase con mayor puntuación
         total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+        correcut += (predicted == labels).sum().item()
 
 print(f"Precisión en el conjunto de prueba: {100 * correct / total}%")
