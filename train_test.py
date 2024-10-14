@@ -19,6 +19,8 @@ test_data = datasets.ImageFolder('test', transform=transform)
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
+print(train_data.class_to_idx) #comprobamos que asigna bien las clases de maligno y benigno
+print(test_data.class_to_idx)
 
 class CNN(nn.Module):
     def __init__(self):
