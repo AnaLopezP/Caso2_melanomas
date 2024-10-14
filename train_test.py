@@ -22,7 +22,7 @@ test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 print(train_data.class_to_idx) #comprobamos que asigna bien las clases de maligno y benigno
 print(test_data.class_to_idx)
 
-'''class CNN(nn.Module):
+class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
         # Definir las capas convolucionales
@@ -34,8 +34,8 @@ print(test_data.class_to_idx)
         self.pool = nn.MaxPool2d(2, 2)
 
         # Fully connected (FC) layers
-        self.fc1 = nn.Linear(128 * 4 * 4, 256)  # Ajusta según el tamaño final de tus imágenes
-        self.fc2 = nn.Linear(256, 10)  # 10 clases de salida
+        self.fc1 = nn.Linear(128 * 8 * 8, 256)  # Ajusta según el tamaño final de tus imágenes
+        self.fc2 = nn.Linear(256, 2)  
 
         # Función de activación
         self.relu = nn.ReLU()
@@ -47,7 +47,7 @@ print(test_data.class_to_idx)
         x = self.pool(self.relu(self.conv3(x)))
 
         # Aplanar el tensor
-        x = x.view(-1, 128 * 4 * 4)
+        x = x.view(-1, 128 * 8 * 8)
 
         # Pasar por las capas fully connected
         x = self.relu(self.fc1(x))
@@ -63,7 +63,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Entrenar el modelo
-epochs = 10
+epochs = 50
 for epoch in range(epochs):
     running_loss = 0.0
     for images, labels in train_loader:
@@ -98,7 +98,6 @@ with torch.no_grad():  # No necesitamos calcular gradientes para la evaluación
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)  # Obtener la clase con mayor puntuación
         total += labels.size(0)
-        correcut += (predicted == labels).sum().item()
+        correct += (predicted == labels).sum().item()
 
 print(f"Precisión en el conjunto de prueba: {100 * correct / total}%")
-'''
