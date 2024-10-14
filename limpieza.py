@@ -45,5 +45,14 @@ def preprocesar_imagen(ruta, destino):
 
             print(f"Imagen preprocesada guardada: {output_path}")
 
+'''preprocesar_imagen(input_dir, output_dir)
+preprocesar_imagen(input_dir_2, output_dir_2)'''
+
+# Hago lo mismo con la de test
+input_dir = 'test\Malignant'  # Carpeta de imágenes originales
+output_dir = 'procesadas_test\Malignant'  # Carpeta para guardar imágenes preprocesadas
+input_dir_2 = 'test\Benign'  # Carpeta de imágenes originales
+output_dir_2 = 'procesadas_test\Benign'  # Carpeta para guardar imágenes preprocesadas
+
 preprocesar_imagen(input_dir, output_dir)
 preprocesar_imagen(input_dir_2, output_dir_2)
