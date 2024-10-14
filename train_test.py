@@ -12,8 +12,8 @@ transform = transforms.Compose([
 ])
 
 # Cargar el dataset desde carpetas
-train_data = datasets.ImageFolder('train', transform=transform)
-test_data = datasets.ImageFolder('test', transform=transform)
+train_data = datasets.ImageFolder('procesado_train', transform=transform)
+test_data = datasets.ImageFolder('procesado_test', transform=transform)
 
 # Crear DataLoaders para cargar los datos en lotes
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)

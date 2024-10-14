@@ -39,8 +39,8 @@ def procesar_imagenes(carpeta_origen, carpeta_destino):
                 print(f"Imagen {archivo} procesada y guardada en {ruta_imagen_destino}")
 
 # Rutas a las carpetas de origen y destino
-carpeta_origen = 'train'  # Carpeta original con imágenes
-carpeta_destino = 'procesado_train'  # Carpeta destino donde se guardarán las imágenes procesadas
+carpeta_origen = 'test'  # Carpeta original con imágenes
+carpeta_destino = 'procesado_test'  # Carpeta destino donde se guardarán las imágenes procesadas
 
 # Procesar las imágenes y guardarlas
 procesar_imagenes(carpeta_origen, carpeta_destino)
