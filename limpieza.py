@@ -40,8 +40,8 @@ def preprocesar_imagen(ruta, destino):
             #img_gris = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
             # Paso 5: Guardar imagen preprocesada
-            carpeta_destino = os.path.join(output_dir, filename)
-            cv2.imwrite(carpeta_destino, img_normalizada)
+            output_path = os.path.join(destino, filename)
+            cv2.imwrite(destino, img_normalizada)
 
             print(f"Imagen preprocesada guardada: {output_path}")
 
