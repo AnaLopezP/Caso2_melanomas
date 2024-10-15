@@ -7,6 +7,10 @@ from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+# Revisar, está haciendo del 0.5 para abajo bien, pero las prob altas no. 
+# Tocar el modelo para que esto no pase y siga clasificando bien
+
 # Transformaciones de datos con data augmentation
 transform = transforms.Compose([
     transforms.Resize((32, 32)),
