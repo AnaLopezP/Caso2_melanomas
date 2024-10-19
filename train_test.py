@@ -104,7 +104,7 @@ train_losses = []
 train_accuracies = []
 
 # Entrenar el modelo
-epochs = 10
+epochs = 30
 best_acc = 0.0
 for epoch in range(epochs):
     running_loss = 0.0
