@@ -12,17 +12,24 @@ import matplotlib.pyplot as plt
 # Tocar el modelo para que esto no pase y siga clasificando bien
 
 # Transformaciones de datos con data augmentation
-transform = transforms.Compose([
+transform_train = transforms.Compose([
     transforms.Resize((32, 32)),
-    transforms.RandomHorizontalFlip(),  # Agregamos un reflejo horizontal
+    transforms.RandomHorizontalFlip(),  # Agregar reflejo horizontal
     transforms.RandomRotation(10),      # Rotación aleatoria hasta 10 grados
+    transforms.RandomAffine(degrees=15, translate=(0.1, 0.1)),  # Deformación aleatoria
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),  # Variación de color
     transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # Normalización estándar
 ])
 
+transform_test = transforms.Compose([
+    transforms.Resize((32, 32)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # No aplicar augmentación a los datos de prueba
+])
 # Cargar el dataset desde carpetas
-train_data = datasets.ImageFolder('procesadas', transform=transform)
-test_data = datasets.ImageFolder('procesadas_test', transform=transform)
+train_data = datasets.ImageFolder('procesadas', transform=transform_train)
+test_data = datasets.ImageFolder('procesadas_test', transform=transform_test)
 
 # Crear DataLoaders para cargar los datos en lotes
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
@@ -33,54 +40,72 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
-        # Definir capas convolucionales con BatchNorm
+        # Definir capas convolucionales con BatchNorm y más filtros
         self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
         self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
         self.bn2 = nn.BatchNorm2d(64)
         self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
         self.bn3 = nn.BatchNorm2d(128)
+        self.conv4 = nn.Conv2d(128, 256, 3, padding=1)
+        self.bn4 = nn.BatchNorm2d(256)
         
         # Max Pooling
         self.pool = nn.MaxPool2d(2, 2)
         
         # Fully connected layers con Dropout
-        self.fc1 = nn.Linear(128 * 4 * 4, 256)
+        self.fc1 = nn.Linear(256 * 2 * 2, 512)
         self.dropout = nn.Dropout(0.5)  # Dropout para prevenir sobreajuste
-        self.fc2 = nn.Linear(256, 2)  # Salida para 2 clases (maligno/benigno)
+        self.fc2 = nn.Linear(512, 1)  # Salida para 2 clases (maligno/benigno)
 
         # Función de activación
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        # Pasar por capas convolucionales y de BatchNorm
+        # Capas convolucionales con BatchNorm y activación
         x = self.pool(self.relu(self.bn1(self.conv1(x))))
         x = self.pool(self.relu(self.bn2(self.conv2(x))))
         x = self.pool(self.relu(self.bn3(self.conv3(x))))
+        x = self.pool(self.relu(self.bn4(self.conv4(x))))
         
         # Aplanar el tensor
-        x = x.view(-1, 128 * 4 * 4)
-        
+        x = x.view(-1, 256 * 2 * 2) 
         # Fully connected layers con Dropout
         x = self.dropout(self.relu(self.fc1(x)))
         x = self.fc2(x)
         return x
 
+
+# === Definir la función de pérdida (Focal Loss) ===
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+    def forward(self, inputs, targets):
+        BCE_loss = nn.BCEWithLogitsLoss()(inputs, targets)
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
+        return F_loss
+
+criterion = FocalLoss()
+
 # Crear una instancia de la CNN
 model = CNN().to(device)
 
-# Definir la función de pérdida y el optimizador
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+# === Optimizer SGD con momentum y decay ===
+optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-5)
 
-# Añadimos un scheduler para reducir la tasa de aprendizaje dinámicamente
+# Scheduler para reducir la tasa de aprendizaje dinámicamente
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+
 
 train_losses = []
 train_accuracies = []
 
 # Entrenar el modelo
 epochs = 10
+best_acc = 0.0
 for epoch in range(epochs):
     running_loss = 0.0
     correct = 0
@@ -89,7 +114,7 @@ for epoch in range(epochs):
     
     for images, labels in train_loader:
         
-        images, labels = images.to(device), labels.to(device)
+        images, labels = images.to(device), labels.to(device).float().unsqueeze(1)
         # Limpiar gradientes
         optimizer.zero_grad()
 
@@ -109,7 +134,7 @@ for epoch in range(epochs):
         running_loss += loss.item()
         
         # Calcular precisión
-        _, predicted = torch.max(outputs, 1)
+        predicted = (torch.sigmoid(outputs) > 0.5).float()
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
@@ -123,6 +148,10 @@ for epoch in range(epochs):
     train_losses.append(epoch_loss)
     train_accuracies.append(epoch_accuracy)
 
+    # Guardar el mejor modelo
+    if epoch_accuracy > best_acc:
+        best_acc = epoch_accuracy
+        torch.save(model.state_dict(), 'best_model.pth')
 
     print(f"Época [{epoch+1}/{epochs}], Pérdida: {running_loss / len(train_loader)}")
 
@@ -140,14 +169,14 @@ model.eval()  # Poner el modelo en modo de evaluación
 
 with torch.no_grad():
     for images, labels in test_loader:
-        images, labels = images.to(device), labels.to(device)
+        images, labels = images.to(device), labels.to(device).float().unsqueeze(1)
         outputs = model(images)
         
-        # Obtener las probabilidades de salida
-        probs = torch.softmax(outputs, dim=1)
-        all_probs.extend(probs[:, 1].cpu().numpy())  # Probabilidad de la clase 1 (maligno)
+        # Obtener probabilidades con sigmoid
+        probs = torch.sigmoid(outputs)
+        all_probs.extend(probs.cpu().numpy())
         
-        _, predicted = torch.max(outputs.data, 1)
+        predicted = (probs > 0.5).float()
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
