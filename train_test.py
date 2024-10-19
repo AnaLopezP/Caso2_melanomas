@@ -186,8 +186,6 @@ with torch.no_grad():
 
 print(f"Precisión en el conjunto de prueba: {100 * correct / total}%")
 
-
-
 # Graficar la curva de pérdida (Loss)
 plt.figure(figsize=(10,5))
 plt.plot(train_losses, label='Pérdida de entrenamiento')
@@ -229,94 +227,3 @@ plt.ylabel('Tasa de verdaderos positivos (TPR)')
 plt.title('Curva ROC')
 plt.legend(loc="lower right")
 plt.show()
-
-
-
-'''# Inicializamos variables
-all_labels = []
-all_predictions = []
-
-# Desactivar la gradiente para evaluación
-with torch.no_grad():
-    for images, labels in test_loader:
-        outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        
-        # Guardar las etiquetas y las predicciones
-        all_labels.extend(labels.cpu().numpy())
-        all_predictions.extend(predicted.cpu().numpy())
-
-# Convertimos a numpy arrays
-all_labels = np.array(all_labels)
-all_predictions = np.array(all_predictions)
-
-# Calcular la matriz de confusión
-conf_matrix = confusion_matrix(all_labels, all_predictions)
-
-# Extraer los valores de la matriz de confusión
-TN, FP, FN, TP = conf_matrix.ravel()
-
-# Calcular precisión, sensibilidad y especificidad
-precision = TP / (TP + FP)
-sensibilidad = TP / (TP + FN)  # También llamada "recall"
-especificidad = TN / (TN + FP)
-
-# Imprimir las métricas
-print(f"Precisión: {precision:.2f}")
-print(f"Sensibilidad (Recall): {sensibilidad:.2f}")
-print(f"Especificidad: {especificidad:.2f}")
-
-# Inicializamos los valores predichos y las etiquetas reales
-all_probs = []
-all_labels = []
-
-# Evaluar el modelo y obtener las probabilidades
-with torch.no_grad():
-    for images, labels in test_loader:
-        outputs = model(images)
-        probs = torch.softmax(outputs, dim=1)  # Obtener probabilidades con softmax
-        all_probs.extend(probs[:, 1].cpu().numpy())  # Probabilidad de la clase 1 (positiva)
-        all_labels.extend(labels.cpu().numpy())
-
-# Convertimos a arrays numpy
-all_probs = np.array(all_probs)
-all_labels = np.array(all_labels)
-
-# Calcular AUC
-auc = roc_auc_score(all_labels, all_probs)
-print(f"AUC-ROC: {auc:.2f}")
-
-# Calcular la curva ROC
-fpr, tpr, thresholds = roc_curve(all_labels, all_probs)
-
-# Si quieres graficar la curva ROC
-import matplotlib.pyplot as plt
-
-plt.figure()
-plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (AUC = {auc:.2f})')
-plt.plot([0, 1], [0, 1], color='gray', linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('Tasa de falsos positivos (FPR)')
-plt.ylabel('Tasa de verdaderos positivos (TPR)')
-plt.title('Curva ROC')
-plt.legend(loc="lower right")
-plt.show()
-
-# Graficar la curva de pérdida (Loss)
-plt.figure(figsize=(10,5))
-plt.plot(train_losses, label='Pérdida de entrenamiento')
-plt.title('Curva de Pérdida')
-plt.xlabel('Épocas')
-plt.ylabel('Pérdida')
-plt.legend()
-plt.show()
-
-# Graficar la curva de precisión (Accuracy)
-plt.figure(figsize=(10,5))
-plt.plot(train_accuracies, label='Precisión de entrenamiento')
-plt.title('Curva de Precisión')
-plt.xlabel('Épocas')
-plt.ylabel('Precisión (%)')
-plt.legend()
-plt.show()'''
