@@ -7,11 +7,7 @@ import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from torchvision import models, transforms
 from werkzeug.utils import secure_filename
-#from train_test import model
-
-# Cargo el modelo desde train_test.py 
-'''model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
-model.eval() '''
+from train_test import model
 
 # Inicializar la app Flask
 app = Flask(__name__)
@@ -35,8 +31,6 @@ def preprocess_image(image_path):
 
 # Generar un mapa de calor (grad-CAM)
 def generate_heatmap(image, model):
-    # Aquí iría el código para Grad-CAM o cualquier técnica para obtener el mapa de calor
-    # Vamos a usar un dummy heatmap para este ejemplo
     heatmap = np.random.random((224, 224))
     return heatmap
 
@@ -44,7 +38,6 @@ def generate_heatmap(image, model):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Comprobar si hay un archivo subido
         if 'file' not in request.files:
             return redirect(request.url)
         file = request.files['file']
@@ -60,7 +53,7 @@ def index():
 
             # Generar el mapa de calor
             heatmap = generate_heatmap(image, model)
-            
+
             # Guardar el mapa de calor como imagen
             heatmap_path = os.path.join(app.config['UPLOAD_FOLDER'], 'heatmap_' + filename)
             plt.imshow(heatmap, cmap='hot', interpolation='nearest')
@@ -76,7 +69,7 @@ def index():
                                    heatmap_url=url_for('static', filename='uploads/heatmap_' + filename),
                                    diagnosis=result)
 
-    return render_template('index.html')
+    return render_template('template/index.html')
 
 # Iniciar la app
 if __name__ == '__main__':
