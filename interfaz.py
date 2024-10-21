@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import cv2
 import numpy as np
 import torch
@@ -8,7 +8,14 @@ from torch.autograd import Variable
 from torchvision import models, transforms
 from werkzeug.utils import secure_filename
 from train_test import model
+from PIL import Image
+import io
+import torch.nn as nn
 
+# creo la carpeta uploads
+if not os.path.exists('uploads'):
+    os.makedirs('uploads')
+    
 # Inicializar la app Flask
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = './uploads'
@@ -69,7 +76,8 @@ def index():
                                    heatmap_url=url_for('static', filename='uploads/heatmap_' + filename),
                                    diagnosis=result)
 
-    return render_template('template/index.html')
+    return render_template('index.html')
+
 
 # Iniciar la app
 if __name__ == '__main__':
