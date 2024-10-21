@@ -9,10 +9,6 @@ from torchvision import models, transforms
 from werkzeug.utils import secure_filename
 from train_test import model
 
-# Cargo el modelo desde train_test.py 
-model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
-model.eval() 
-
 # Inicializar la app Flask
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = './uploads'
@@ -35,8 +31,6 @@ def preprocess_image(image_path):
 
 # Generar un mapa de calor (grad-CAM)
 def generate_heatmap(image, model):
-    # Aquí iría el código para Grad-CAM o cualquier técnica para obtener el mapa de calor
-    # Vamos a usar un dummy heatmap para este ejemplo
     heatmap = np.random.random((224, 224))
     return heatmap
 
@@ -44,7 +38,6 @@ def generate_heatmap(image, model):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Comprobar si hay un archivo subido
         if 'file' not in request.files:
             return redirect(request.url)
         file = request.files['file']
@@ -56,10 +49,7 @@ def index():
 
             # Preprocesar la imagen y hacer la predicción
             image = preprocess_image(filepath)
-            with torch.no_grad():
-                
-                outputs = model(image)
-                _, predicted = torch.max(outputs, 1)
+            outputs = model(image)
 
             # Generar el mapa de calor
             heatmap = generate_heatmap(image, model)
@@ -71,7 +61,7 @@ def index():
             plt.savefig(heatmap_path, bbox_inches='tight', pad_inches=0)
 
             # Obtener el resultado del modelo
-            #_, predicted = torch.max(outputs, 1)
+            _, predicted = torch.max(outputs, 1)
             result = 'Maligna (Melanoma)' if predicted.item() == 1 else 'Benigna'
 
             # Renderizar el resultado y la imagen con el mapa de calor
@@ -79,7 +69,7 @@ def index():
                                    heatmap_url=url_for('static', filename='uploads/heatmap_' + filename),
                                    diagnosis=result)
 
-    return render_template('index.html')
+    return render_template('template/index.html')
 
 # Iniciar la app
 if __name__ == '__main__':

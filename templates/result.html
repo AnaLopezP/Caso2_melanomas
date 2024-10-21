@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado del Diagnóstico</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Resultado del Diagnóstico</h2>
+        <p><strong>Diagnóstico:</strong> {{ diagnosis }}</p>
+        <img src="{{ image_url }}" alt="Imagen Original">
+        <h3>Mapa de Calor:</h3>
+        <img src="{{ heatmap_url }}" alt="Mapa de Calor">
+        <a href="/" class="button">Volver al Inicio</a>
+    </div>
+    <footer>
+        <p>Detector de Melanomas - Proyecto de Diagnóstico por Imagen</p>
+    </footer>
+</body>
+</html>
