@@ -13,14 +13,14 @@ body {
     max-width: 900px;
     margin: 50px auto;
     padding: 20px;
-    background-color: #fff;
+    background-color: #f5cede;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilo para botones */
 button, input[type="submit"] {
-    background-color: #007BFF;
+    background-color: #74a671;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -30,7 +30,7 @@ button, input[type="submit"] {
 }
 
 button:hover, input[type="submit"]:hover {
-    background-color: #0056b3;
+    background-color: #74a671;
 }
 
 /* Estilo para las imágenes */
@@ -42,7 +42,7 @@ img {
 
 /* Estilo de los títulos */
 h1, h2 {
-    color: #007BFF;
+    color: #406b3e;
     margin-bottom: 20px;
 }
 
@@ -50,7 +50,7 @@ h1, h2 {
 footer {
     margin-top: 50px;
     padding: 10px;
-    background-color: #007BFF;
+    background-color: #74a671;
     color: white;
     font-size: 14px;
 }

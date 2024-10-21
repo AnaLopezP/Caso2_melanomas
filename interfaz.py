@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from torchvision import models, transforms
 from werkzeug.utils import secure_filename
-from train_test import model
+#from train_test import model
 
 # Cargo el modelo desde train_test.py 
-model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
-model.eval() 
+'''model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
+model.eval() '''
 
 # Inicializar la app Flask
 app = Flask(__name__)
