@@ -49,6 +49,10 @@ with torch.no_grad():
 all_probs = np.array(all_probs)
 all_preds = np.array(all_preds)
 
-# Mostrar los primeros 10 resultados
-for i in range(10):
-    print(f"Imagen: {image_paths[i]}, Predicción: {all_preds[i][0]}, Probabilidad: {all_probs[i][0]:.4f}")
+# Mostrar los 100 primeros resultados
+for i in range(100):
+    print(f"Imagen: {image_paths[i]} - Predicción: {all_preds[i]} - Probabilidad: {all_probs[i]} - Osea que es: {'Malignant' if all_preds[i] == 1 else 'Benign'}")
+    
+# Mostrar los ultimos 100 resultados
+for i in range(100):
+    print(f"Imagen: {image_paths[-i]} - Predicción: {all_preds[-i]} - Probabilidad: {all_probs[-i]} - Osea que es: {'Malignant' if all_preds[-i] == 1 else 'Benign'}")

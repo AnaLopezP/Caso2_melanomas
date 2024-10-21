@@ -12,6 +12,10 @@ from PIL import Image
 import io
 import torch.nn as nn
 
+# Cargar el modelo preentrenado
+model.load_state_dict(torch.load('best_model.pth'))
+model.eval()  # Poner el modelo en modo de evaluación  
+
 # creo la carpeta uploads
 if not os.path.exists('static'):
     os.makedirs('static')
@@ -20,10 +24,6 @@ if not os.path.exists('static'):
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = './static'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-'''# Cargar el modelo preentrenado
-model.load_state_dict(torch.load('best_model.pth'))
-model.eval()  # Poner el modelo en modo de evaluación'''
 
 # Comprobar si la imagen tiene un formato permitido
 def allowed_file(filename):
@@ -73,8 +73,15 @@ def index():
             plt.savefig(heatmap_path, bbox_inches='tight', pad_inches=0)
 
             # Obtener el resultado del modelo
+            # NO SE POR QUÉ PERO AQUÍ DA SIEMPRE 0
+            # EL MODELO PREDICE BIEN, OSEA NO DA 0 SIEMPRE, PERO POR ALGUA RAZÓN AQUÍ SIEMPRE DA 0
             _, predicted = torch.max(outputs, 1)
-            result = 'Maligna (Melanoma)' if predicted.item() == 1 else 'Benigna'
+            if predicted.item() == 1:
+                result = 'Maligna (Melanoma)'
+            elif predicted.item() == 0:
+                result = 'Benigna'
+            else: 
+                result = "No lo sé pero soy coquette y me gusta el helado <3" 
             print(filename, result)
             # Renderizar el resultado y la imagen con el mapa de calor
             return render_template('result.html', image_url=url_for('static', filename=filename),
@@ -82,7 +89,6 @@ def index():
                                    diagnosis=result)
 
     return render_template('index.html')
-
 
 # Iniciar la app
 if __name__ == '__main__':

@@ -41,12 +41,13 @@ def preprocesar_imagen(ruta, destino):
 
             # Paso 5: Guardar imagen preprocesada
             output_path = os.path.join(destino, filename)
-            cv2.imwrite(destino, img_normalizada)
+            cv2.imwrite(output_path, img_normalizada * 255.0)  # Multiplicamos por 255 para volver a rango de 0-255
+
 
             print(f"Imagen preprocesada guardada: {output_path}")
 
-'''preprocesar_imagen(input_dir, output_dir)
-preprocesar_imagen(input_dir_2, output_dir_2)'''
+preprocesar_imagen(input_dir, output_dir)
+preprocesar_imagen(input_dir_2, output_dir_2)
 
 # Hago lo mismo con la de test
 input_dir = 'test\Malignant'  # Carpeta de imágenes originales
@@ -54,5 +55,6 @@ output_dir = 'procesadas_test\Malignant'  # Carpeta para guardar imágenes prepr
 input_dir_2 = 'test\Benign'  # Carpeta de imágenes originales
 output_dir_2 = 'procesadas_test\Benign'  # Carpeta para guardar imágenes preprocesadas
 
-preprocesar_imagen(input_dir, output_dir)
+'''preprocesar_imagen(input_dir, output_dir)
 preprocesar_imagen(input_dir_2, output_dir_2)
+'''
