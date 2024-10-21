@@ -82,6 +82,7 @@ class FocalLoss(nn.Module):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
+        
     def forward(self, inputs, targets):
         BCE_loss = nn.BCEWithLogitsLoss()(inputs, targets)
         pt = torch.exp(-BCE_loss)
@@ -100,130 +101,146 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 
-train_losses = []
-train_accuracies = []
 
-# Entrenar el modelo
-epochs = 30
-best_acc = 0.0
-for epoch in range(epochs):
-    running_loss = 0.0
+
+
+def train_model(epochs):# Entrenar el modelo
+    train_losses = []
+    train_accuracies = []
+    best_acc = 0.0
+    for epoch in range(epochs):
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        model.train()  # Poner el modelo en modo de entrenamiento
+        
+        for images, labels in train_loader:
+            
+            images, labels = images.to(device), labels.to(device).float().unsqueeze(1)
+            # Limpiar gradientes
+            optimizer.zero_grad()
+
+            # Forward pass
+            outputs = model(images)
+            
+            # Calcular pérdida
+            loss = criterion(outputs, labels)
+            
+            # Backward pass (retropropagación)
+            loss.backward()
+            
+            # Actualizar parámetros
+            optimizer.step()
+
+            # Acumular la pérdida
+            running_loss += loss.item()
+            
+            # Calcular precisión
+            predicted = (torch.sigmoid(outputs) > 0.5).float()
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+        # Ajustar la tasa de aprendizaje con el scheduler
+        scheduler.step()
+        
+        # Guardar los resultados de la época
+        epoch_loss = running_loss / len(train_loader)
+        epoch_accuracy = 100 * correct / total
+
+        train_losses.append(epoch_loss)
+        train_accuracies.append(epoch_accuracy)
+
+        # Guardar el mejor modelo
+        if epoch_accuracy > best_acc:
+            best_acc = epoch_accuracy
+            torch.save(model.state_dict(), 'best_model.pth')
+
+        print(f"Época [{epoch+1}/{epochs}], Pérdida: {running_loss / len(train_loader)}")
+
+    print("Entrenamiento completado")
+    return train_losses, train_accuracies
+    
+
+
+def evaluar_modelo(train_losses, train_accuracies):
+    # Evaluar el modelo
     correct = 0
     total = 0
-    model.train()  # Poner el modelo en modo de entrenamiento
+
+    all_labels = []
+    all_probs = []
+
     
-    for images, labels in train_loader:
-        
-        images, labels = images.to(device), labels.to(device).float().unsqueeze(1)
-        # Limpiar gradientes
-        optimizer.zero_grad()
+    model.load_state_dict(torch.load('best_model.pth'))
+    model.eval()  # Poner el modelo en modo de evaluación
 
-        # Forward pass
-        outputs = model(images)
-        
-        # Calcular pérdida
-        loss = criterion(outputs, labels)
-        
-        # Backward pass (retropropagación)
-        loss.backward()
-        
-        # Actualizar parámetros
-        optimizer.step()
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device).float().unsqueeze(1)
+            outputs = model(images)
+            
+            # Obtener probabilidades con sigmoid
+            probs = torch.sigmoid(outputs)
+            all_probs.extend(probs.cpu().numpy())
+            
+            predicted = (probs > 0.5).float()
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-        # Acumular la pérdida
-        running_loss += loss.item()
-        
-        # Calcular precisión
-        predicted = (torch.sigmoid(outputs) > 0.5).float()
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+            # Guardar etiquetas reales
+            all_labels.extend(labels.cpu().numpy())
 
-    # Ajustar la tasa de aprendizaje con el scheduler
-    scheduler.step()
+
+    print(f"Precisión en el conjunto de prueba: {100 * correct / total}%")
+
+    # Graficar la curva de pérdida (Loss)
+    plt.figure(figsize=(10,5))
+    plt.plot(train_losses, label='Pérdida de entrenamiento')
+    plt.title('Curva de Pérdida')
+    plt.xlabel('Épocas')
+    plt.ylabel('Pérdida')
+    plt.legend()
+    plt.show()
+
+    # Graficar la curva de precisión (Accuracy)
+    plt.figure(figsize=(10,5))
+    plt.plot(train_accuracies, label='Precisión de entrenamiento')
+    plt.title('Curva de Precisión')
+    plt.xlabel('Épocas')
+    plt.ylabel('Precisión (%)')
+    plt.legend()
+    plt.show()
+
+
+    # Convertir las listas de etiquetas y probabilidades a arrays numpy
+    all_labels = np.array(all_labels)
+    all_probs = np.array(all_probs)
+
+    # Calcular AUC-ROC
+    auc = roc_auc_score(all_labels, all_probs)
+    print(f"AUC-ROC: {auc:.2f}")
+
+    # Calcular la curva ROC
+    fpr, tpr, thresholds = roc_curve(all_labels, all_probs)
+
+    # Graficar la curva ROC
+    plt.figure()
+    plt.plot(fpr, tpr, color='blue', lw=2, label=f'Curva ROC (AUC = {auc:.2f})')
+    plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  # Línea diagonal de referencia
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Tasa de falsos positivos (FPR)')
+    plt.ylabel('Tasa de verdaderos positivos (TPR)')
+    plt.title('Curva ROC')
+    plt.legend(loc="lower right")
+    plt.show()
     
-    # Guardar los resultados de la época
-    epoch_loss = running_loss / len(train_loader)
-    epoch_accuracy = 100 * correct / total
-
-    train_losses.append(epoch_loss)
-    train_accuracies.append(epoch_accuracy)
-
-    # Guardar el mejor modelo
-    if epoch_accuracy > best_acc:
-        best_acc = epoch_accuracy
-        torch.save(model.state_dict(), 'best_model.pth')
-
-    print(f"Época [{epoch+1}/{epochs}], Pérdida: {running_loss / len(train_loader)}")
-
-print("Entrenamiento completado")
-
-# Evaluar el modelo
-correct = 0
-total = 0
-
-all_labels = []
-all_probs = []
-
-
-model.eval()  # Poner el modelo en modo de evaluación
-
-with torch.no_grad():
-    for images, labels in test_loader:
-        images, labels = images.to(device), labels.to(device).float().unsqueeze(1)
-        outputs = model(images)
-        
-        # Obtener probabilidades con sigmoid
-        probs = torch.sigmoid(outputs)
-        all_probs.extend(probs.cpu().numpy())
-        
-        predicted = (probs > 0.5).float()
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-        # Guardar etiquetas reales
-        all_labels.extend(labels.cpu().numpy())
-
-
-print(f"Precisión en el conjunto de prueba: {100 * correct / total}%")
-
-# Graficar la curva de pérdida (Loss)
-plt.figure(figsize=(10,5))
-plt.plot(train_losses, label='Pérdida de entrenamiento')
-plt.title('Curva de Pérdida')
-plt.xlabel('Épocas')
-plt.ylabel('Pérdida')
-plt.legend()
-plt.show()
-
-# Graficar la curva de precisión (Accuracy)
-plt.figure(figsize=(10,5))
-plt.plot(train_accuracies, label='Precisión de entrenamiento')
-plt.title('Curva de Precisión')
-plt.xlabel('Épocas')
-plt.ylabel('Precisión (%)')
-plt.legend()
-plt.show()
-
-
-# Convertir las listas de etiquetas y probabilidades a arrays numpy
-all_labels = np.array(all_labels)
-all_probs = np.array(all_probs)
-
-# Calcular AUC-ROC
-auc = roc_auc_score(all_labels, all_probs)
-print(f"AUC-ROC: {auc:.2f}")
-
-# Calcular la curva ROC
-fpr, tpr, thresholds = roc_curve(all_labels, all_probs)
-
-# Graficar la curva ROC
-plt.figure()
-plt.plot(fpr, tpr, color='blue', lw=2, label=f'Curva ROC (AUC = {auc:.2f})')
-plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  # Línea diagonal de referencia
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('Tasa de falsos positivos (FPR)')
-plt.ylabel('Tasa de verdaderos positivos (TPR)')
-plt.title('Curva ROC')
-plt.legend(loc="lower right")
-plt.show()
+    
+if __name__ == '__main__':
+    #Entrenar modelo
+    train_losses, train_accuracies = train_model(30)
+    
+    
+    #evaluar modelo
+    evaluar_modelo(train_losses, train_accuracies)
+    

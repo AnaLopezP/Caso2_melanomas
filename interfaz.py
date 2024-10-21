@@ -11,7 +11,7 @@ from train_test import model
 
 # Cargo el modelo desde train_test.py 
 model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
-#model.eval() 
+model.eval() 
 
 # Inicializar la app Flask
 app = Flask(__name__)
@@ -56,7 +56,10 @@ def index():
 
             # Preprocesar la imagen y hacer la predicción
             image = preprocess_image(filepath)
-            outputs = model(image)
+            with torch.no_grad():
+                
+                outputs = model(image)
+                _, predicted = torch.max(outputs, 1)
 
             # Generar el mapa de calor
             heatmap = generate_heatmap(image, model)
@@ -68,7 +71,7 @@ def index():
             plt.savefig(heatmap_path, bbox_inches='tight', pad_inches=0)
 
             # Obtener el resultado del modelo
-            _, predicted = torch.max(outputs, 1)
+            #_, predicted = torch.max(outputs, 1)
             result = 'Maligna (Melanoma)' if predicted.item() == 1 else 'Benigna'
 
             # Renderizar el resultado y la imagen con el mapa de calor
