@@ -13,13 +13,17 @@ import io
 import torch.nn as nn
 
 # creo la carpeta uploads
-if not os.path.exists('uploads'):
-    os.makedirs('uploads')
+if not os.path.exists('static'):
+    os.makedirs('static')
     
 # Inicializar la app Flask
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = './uploads'
+app.config['UPLOAD_FOLDER'] = './static'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+'''# Cargar el modelo preentrenado
+model.load_state_dict(torch.load('best_model.pth'))
+model.eval()  # Poner el modelo en modo de evaluación'''
 
 # Comprobar si la imagen tiene un formato permitido
 def allowed_file(filename):
@@ -28,7 +32,8 @@ def allowed_file(filename):
 # Preprocesar la imagen para el modelo
 def preprocess_image(image_path):
     image = cv2.imread(image_path)
-    image = cv2.resize(image, (224, 224))  # Cambiar tamaño a 224x224
+    image = cv2.resize(image, (32, 32))  # Cambiar tamaño a 32x32
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convertir a RGB
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -38,8 +43,39 @@ def preprocess_image(image_path):
 
 # Generar un mapa de calor (grad-CAM)
 def generate_heatmap(image, model):
-    heatmap = np.random.random((224, 224))
+    model.eval()
+    image.requires_grad = True
+    
+    # Forward pass
+    output = model(image)
+    
+    # Obtener la puntuación de la clase predicha
+    score = output[0][0]  # Suponiendo que la clase 1 es "Maligna"
+    
+    # Backward pass
+    model.zero_grad()
+    score.backward()
+    
+    # Obtener los gradientes de la última capa convolucional
+    gradients = image.grad.data.numpy()[0]  # Convertir a numpy
+    
+    # Calcular el mapa de calor
+    weights = np.mean(gradients, axis=(1, 2))  # Media de los gradientes
+    activation = model.features[-1].data.numpy()[0]  # Activaciones de la última capa convolucional
+    heatmap = np.zeros(activation.shape[1:], dtype=np.float32)  # Inicializar el mapa de calor
+
+    # Calcular el mapa de calor ponderado
+    for i, w in enumerate(weights):
+        heatmap += w * activation[i, :, :]
+
+    # Aplicar la función ReLU
+    heatmap = np.maximum(heatmap, 0)
+
+    # Normalizar el mapa de calor
+    heatmap /= np.max(heatmap)
+
     return heatmap
+
 
 # Ruta principal
 @app.route('/', methods=['GET', 'POST'])
@@ -70,10 +106,10 @@ def index():
             # Obtener el resultado del modelo
             _, predicted = torch.max(outputs, 1)
             result = 'Maligna (Melanoma)' if predicted.item() == 1 else 'Benigna'
-
+            print(filename, result)
             # Renderizar el resultado y la imagen con el mapa de calor
-            return render_template('result.html', image_url=url_for('static', filename='uploads/' + filename),
-                                   heatmap_url=url_for('static', filename='uploads/heatmap_' + filename),
+            return render_template('result.html', image_url=url_for('static', filename=filename),
+                                   heatmap_url=url_for('static', filename='heatmap_' + filename),
                                    diagnosis=result)
 
     return render_template('index.html')
