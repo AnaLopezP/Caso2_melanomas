@@ -11,7 +11,7 @@ from train_test import model
 
 # Cargo el modelo desde train_test.py 
 model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
-#model.eval() 
+model.eval() 
 
 # Inicializar la app Flask
 app = Flask(__name__)
@@ -60,7 +60,7 @@ def index():
 
             # Generar el mapa de calor
             heatmap = generate_heatmap(image, model)
-
+            
             # Guardar el mapa de calor como imagen
             heatmap_path = os.path.join(app.config['UPLOAD_FOLDER'], 'heatmap_' + filename)
             plt.imshow(heatmap, cmap='hot', interpolation='nearest')
