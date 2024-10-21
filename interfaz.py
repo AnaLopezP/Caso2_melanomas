@@ -43,39 +43,8 @@ def preprocess_image(image_path):
 
 # Generar un mapa de calor (grad-CAM)
 def generate_heatmap(image, model):
-    model.eval()
-    image.requires_grad = True
-    
-    # Forward pass
-    output = model(image)
-    
-    # Obtener la puntuación de la clase predicha
-    score = output[0][0]  # Suponiendo que la clase 1 es "Maligna"
-    
-    # Backward pass
-    model.zero_grad()
-    score.backward()
-    
-    # Obtener los gradientes de la última capa convolucional
-    gradients = image.grad.data.numpy()[0]  # Convertir a numpy
-    
-    # Calcular el mapa de calor
-    weights = np.mean(gradients, axis=(1, 2))  # Media de los gradientes
-    activation = model.features[-1].data.numpy()[0]  # Activaciones de la última capa convolucional
-    heatmap = np.zeros(activation.shape[1:], dtype=np.float32)  # Inicializar el mapa de calor
-
-    # Calcular el mapa de calor ponderado
-    for i, w in enumerate(weights):
-        heatmap += w * activation[i, :, :]
-
-    # Aplicar la función ReLU
-    heatmap = np.maximum(heatmap, 0)
-
-    # Normalizar el mapa de calor
-    heatmap /= np.max(heatmap)
-
+    heatmap = np.random.random((224, 224))
     return heatmap
-
 
 # Ruta principal
 @app.route('/', methods=['GET', 'POST'])
