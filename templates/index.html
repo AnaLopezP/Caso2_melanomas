@@ -1,14 +1,21 @@
-<!doctype html>
-<html lang="en">
-  <head>
+<!DOCTYPE html>
+<html lang="es">
+<head>
     <meta charset="UTF-8">
-    <title>Detección de Melanomas</title>
-  </head>
-  <body>
-    <h1>Cargar imagen dermatoscópica</h1>
-    <form method="POST" enctype="multipart/form-data">
-      <input type="file" name="file">
-      <input type="submit" value="Diagnosticar">
-    </form>
-  </body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de Melanomas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Sube una Imagen para el Diagnóstico</h1>
+        <form action="/" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required><br><br>
+            <input type="submit" value="Subir Imagen">
+        </form>
+    </div>
+    <footer>
+        <p>Detector de Melanomas - Proyecto de Diagnóstico por Imagen</p>
+    </footer>
+</body>
 </html>
