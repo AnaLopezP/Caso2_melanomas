@@ -10,8 +10,8 @@ from werkzeug.utils import secure_filename
 from train_test import model
 
 # Cargo el modelo desde train_test.py 
-model = model
-model.eval()
+model.load_state_dict(torch.load('best_model.pth'))  # Cargar el modelo preentrenado
+#model.eval() 
 
 # Inicializar la app Flask
 app = Flask(__name__)
