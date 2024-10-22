@@ -3,50 +3,65 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-class SaveFeatures:
-    def __init__(self, module):
-        self.hook = module.register_forward_hook(self.hook_fn)
-    def hook_fn(self, module, input, output):
-        self.features = output
-    def remove(self):
-        self.hook.remove()
-
-def generate_gradcam(image_tensor, model, final_conv_layer_name='conv4'):
+def generate_gradcam(image, model, target_class=None):
+    # Poner el modelo en modo de evaluación
     model.eval()
-
-    # Guardar los gradientes
-    final_conv_layer = dict([*model.named_modules()])[final_conv_layer_name]
-    features = SaveFeatures(final_conv_layer)
-
-    output = model(image_tensor)
-    output = torch.sigmoid(output)
     
-    pred_class = output.argmax(dim=1)
+    gradients = None  # Variable para almacenar los gradientes
     
-    # Retropropagación del gradiente
+    # Hacer que los gradientes de la última capa convolucional sean accesibles
+    def extract_gradients(module, gran_input, grad_output):
+        nonlocal gradients
+        gradients = grad_output
+    
+    conv_output = None  # Variable para almacenar las activaciones
+    def extract_activations(module, input, output):
+        nonlocal conv_output
+        conv_output = output
+
+    # Registrar los hooks
+    model.conv4.register_forward_hook(extract_activations)
+    model.conv4.register_full_backward_hook(extract_gradients)
+    
+    # Pasar la imagen por el modelo
+    output = model(image)
+
+    # Si no se especifica una clase objetivo, usaremos la predicción más alta
+    if target_class is None:
+        target_class = torch.argmax(output)
+    
+    # Backward pass para obtener los gradientes de la clase objetivo
     model.zero_grad()
-    output[:, pred_class].backward()
+    class_loss = output[:, target_class]
+    class_loss.backward()
+    
+    # Obtener las activaciones de las características y los gradientes
+    pooled_gradients = torch.mean(gradients[0], dim=[0, 2, 3])
+    conv_output = conv_output.detach()
 
-    gradients = final_conv_layer.weight.grad.data
-    activations = features.features.detach()
+    # Ponderar las activaciones con los gradientes obtenidos
+    for i in range(conv_output.size(1)):
+        conv_output[:, i, :, :] *= pooled_gradients[i]
+    
+    # Obtener la media de las activaciones a través del canal
+    heatmap = torch.mean(conv_output, dim=1).squeeze()
+    heatmap = np.maximum(heatmap.cpu(), 0)  # ReLU en el heatmap
+    heatmap /= torch.max(heatmap)  # Normalizar entre 0 y 1
 
-    pooled_gradients = torch.mean(gradients, dim=[0, 2, 3])
+    return heatmap.numpy()
 
-    for i in range(activations.shape[1]):
-        activations[:, i, :, :] *= pooled_gradients[i]
-
-    heatmap = torch.mean(activations, dim=1).squeeze()
-
-    heatmap = np.maximum(heatmap.cpu(), 0)
-    heatmap /= torch.max(heatmap)
-
-    heatmap = heatmap.numpy()
-    heatmap = cv2.resize(heatmap, (image_tensor.shape[2], image_tensor.shape[3]))
-
-    return heatmap
-
-def apply_heatmap(image_path, heatmap):
-    img = cv2.imread(image_path)
-    heatmap = cv2.applyColorMap(np.uint8(255 * heatmap), cv2.COLORMAP_JET)
-    superimposed_img = heatmap * 0.4 + img
+def overlay_heatmap(heatmap, image_path, alpha=0.5, colormap=cv2.COLORMAP_JET):
+    # Cargar la imagen original
+    original_image = cv2.imread(image_path)
+    original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+    
+    # Redimensionar el mapa de calor al tamaño de la imagen
+    heatmap = cv2.resize(heatmap, (original_image.shape[1], original_image.shape[0]))
+    
+    # Aplicar el colormap al heatmap
+    heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap), colormap)
+    
+    # Superponer el mapa de calor con la imagen original
+    superimposed_img = cv2.addWeighted(heatmap_colored, alpha, original_image, 1 - alpha, 0)
+    
     return superimposed_img

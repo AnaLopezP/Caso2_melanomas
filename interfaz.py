@@ -4,13 +4,11 @@ import cv2
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from torch.autograd import Variable
-from torchvision import models, transforms
+from torchvision import  transforms
 from werkzeug.utils import secure_filename
 from train_test import model
-from PIL import Image
-import io
 import torch.nn as nn
+from gradcam import generate_gradcam, overlay_heatmap
 
 # Cargar el modelo preentrenado
 model.load_state_dict(torch.load('best_model.pth'))
@@ -41,10 +39,6 @@ def preprocess_image(image_path):
     image = transform(image).unsqueeze(0)
     return image
 
-# Generar un mapa de calor (grad-CAM)
-def generate_heatmap(image, model):
-    heatmap = np.random.random((224, 224))
-    return heatmap
 
 # Ruta principal
 @app.route('/', methods=['GET', 'POST'])
@@ -67,11 +61,6 @@ def index():
             #ponemos el modelo en evalucion
             outputs = model(image)
 
-            # Obtener el resultado del modelo
-            # NO SE POR QUÉ PERO AQUÍ DA SIEMPRE 0
-            # EL MODELO PREDICE BIEN, OSEA NO DA 0 SIEMPRE, PERO POR ALGUA RAZÓN AQUÍ SIEMPRE DA 0
-            #_, predicted = torch.max(outputs, 1)
-            
             # Aplicar sigmoide a la salida para obtener una probabilidad
             probs = torch.sigmoid(outputs)
             predicted = (probs > 0.5).float()
@@ -87,11 +76,12 @@ def index():
             print(filename, result)
             
             # Generar el mapa de calor
-            heatmap = generate_heatmap(image, model)
+            heatmap = generate_gradcam(image, model)
+            heatmap_overlay = overlay_heatmap(heatmap, filepath)
 
             # Guardar el mapa de calor como imagen
             heatmap_path = os.path.join(app.config['UPLOAD_FOLDER'], 'heatmap_' + filename)
-            plt.imshow(heatmap, cmap='hot', interpolation='nearest')
+            plt.imshow(heatmap_overlay, cmap='hot', interpolation='nearest')
             plt.axis('off')
             plt.savefig(heatmap_path, bbox_inches='tight', pad_inches=0)
             
