@@ -36,7 +36,7 @@ def preprocess_image(image_path):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convertir a RGB
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     image = transform(image).unsqueeze(0)
     return image
@@ -61,8 +61,31 @@ def index():
 
             # Preprocesar la imagen y hacer la predicción
             image = preprocess_image(filepath)
+            
+            model.eval()
+            
+            #ponemos el modelo en evalucion
             outputs = model(image)
 
+            # Obtener el resultado del modelo
+            # NO SE POR QUÉ PERO AQUÍ DA SIEMPRE 0
+            # EL MODELO PREDICE BIEN, OSEA NO DA 0 SIEMPRE, PERO POR ALGUA RAZÓN AQUÍ SIEMPRE DA 0
+            #_, predicted = torch.max(outputs, 1)
+            
+            # Aplicar sigmoide a la salida para obtener una probabilidad
+            probs = torch.sigmoid(outputs)
+            predicted = (probs > 0.5).float()
+            
+            print("Probabilidad predicha:", probs.item())
+            
+            if predicted.item() == 1:
+                result = 'Maligna (Melanoma)'
+            elif predicted.item() == 0:
+                result = 'Benigna'
+            else: 
+                result = "No lo sé pero soy coquette y me gusta el helado <3" 
+            print(filename, result)
+            
             # Generar el mapa de calor
             heatmap = generate_heatmap(image, model)
 
@@ -71,18 +94,7 @@ def index():
             plt.imshow(heatmap, cmap='hot', interpolation='nearest')
             plt.axis('off')
             plt.savefig(heatmap_path, bbox_inches='tight', pad_inches=0)
-
-            # Obtener el resultado del modelo
-            # NO SE POR QUÉ PERO AQUÍ DA SIEMPRE 0
-            # EL MODELO PREDICE BIEN, OSEA NO DA 0 SIEMPRE, PERO POR ALGUA RAZÓN AQUÍ SIEMPRE DA 0
-            _, predicted = torch.max(outputs, 1)
-            if predicted.item() == 1:
-                result = 'Maligna (Melanoma)'
-            elif predicted.item() == 0:
-                result = 'Benigna'
-            else: 
-                result = "No lo sé pero soy coquette y me gusta el helado <3" 
-            print(filename, result)
+            
             # Renderizar el resultado y la imagen con el mapa de calor
             return render_template('result.html', image_url=url_for('static', filename=filename),
                                    heatmap_url=url_for('static', filename='heatmap_' + filename),
